@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>DevTech Academy - Alunos</title>
+</head>
+<body>
+<h1>DevTech Academy - Alunos</h1>
+
+<form id="form">
+  <label>Nome: <input type="text" id="nome" required></label><br>
+  <label>Idade: <input type="number" id="idade" min="0" required></label><br>
+  <label>Curso:
+    <select id="curso">
+      <option>JavaScript</option>
+      <option>Python</option>
+      <option>Java</option>
+    </select>
+  </label><br>
+  <label>Nota Final: <input type="number" id="nota" min="0" max="10" step="0.1" required></label><br>
+  <button type="submit" id="salvar">Cadastrar</button>
+  <button type="button" id="cancelar" hidden>Cancelar</button>
+</form>
+
+<h2>Alunos</h2>
+<table border="1">
+  <thead>
+    <tr><th>Nome</th><th>Idade</th><th>Curso</th><th>Nota Final</th><th>Situação</th><th>Ações</th></tr>
+  </thead>
+  <tbody id="tabela"></tbody>
+</table>
+
+<h2>Relatórios</h2>
+<button id="r-aprovados">Aprovados</button>
+<button id="r-media-notas">Média das notas</button>
+<button id="r-media-idades">Média das idades</button>
+<button id="r-nomes">Nomes em ordem alfabética</button>
+<button id="r-cursos">Alunos por curso</button>
+<div id="relatorio"></div>
+
+<script>
+class Aluno {
+  constructor(nome, idade, curso, notaFinal) {
+    this.nome = nome;
+    this.idade = idade;
+    this.curso = curso;
+    this.notaFinal = notaFinal;
+  }
+  isAprovado() {
+    return this.notaFinal >= 7;
+  }
+  toString() {
+    return `${this.nome}, ${this.idade} anos, ${this.curso}, nota ${this.notaFinal} (${this.isAprovado() ? 'Aprovado' : 'Reprovado'})`;
+  }
+}
+
+const alunos = [];
+let editando = -1;
+
+const $ = id => document.getElementById(id);
+const media = valores => valores.length ? valores.reduce((a, b) => a + b, 0) / valores.length : 0;
+const mostrar = html => $('relatorio').innerHTML = html;
+const lista = itens => itens.length ? `<ul>${itens.map(i => `<li>${i}</li>`).join('')}</ul>` : '<p>Nenhum resultado.</p>';
+
+const limpar = () => {
+  $('form').reset();
+  editando = -1;
+  $('salvar').textContent = 'Cadastrar';
+  $('cancelar').hidden = true;
+};
+
+const renderizar = () => {
+  $('tabela').innerHTML = '';
+  alunos.forEach((a, i) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${a.nome}</td><td>${a.idade}</td><td>${a.curso}</td><td>${a.notaFinal}</td><td>${a.isAprovado() ? 'Aprovado' : 'Reprovado'}</td><td></td>`;
+    const editar = document.createElement('button');
+    editar.textContent = 'Editar';
+    editar.addEventListener('click', function () {
+      $('nome').value = a.nome;
+      $('idade').value = a.idade;
+      $('curso').value = a.curso;
+      $('nota').value = a.notaFinal;
+      editando = i;
+      $('salvar').textContent = 'Salvar';
+      $('cancelar').hidden = false;
+    });
+    const excluir = document.createElement('button');
+    excluir.textContent = 'Excluir';
+    excluir.addEventListener('click', function () {
+      alunos.splice(i, 1);
+      if (editando === i) limpar();
+      else if (editando > i) editando--;
+      renderizar();
+      alert(`Aluno ${a.nome} excluído.`);
+    });
+    tr.lastChild.append(editar, ' ', excluir);
+    $('tabela').appendChild(tr);
+  });
+};
+
+$('form').addEventListener('submit', function (e) {
+  e.preventDefault();
+  const aluno = new Aluno($('nome').value.trim(), Number($('idade').value), $('curso').value, Number($('nota').value));
+  const novo = editando < 0;
+  if (novo) alunos.push(aluno);
+  else alunos[editando] = aluno;
+  limpar();
+  renderizar();
+  alert(novo ? `Aluno ${aluno.nome} cadastrado.` : `Aluno ${aluno.nome} atualizado.`);
+});
+
+$('cancelar').addEventListener('click', function () {
+  limpar();
+});
+
+$('r-aprovados').addEventListener('click', function () {
+  mostrar('<h3>Aprovados</h3>' + lista(alunos.filter(a => a.isAprovado()).map(a => a.toString())));
+});
+
+$('r-media-notas').addEventListener('click', function () {
+  mostrar(`<h3>Média das notas</h3><p>${media(alunos.map(a => a.notaFinal)).toFixed(2)}</p>`);
+});
+
+$('r-media-idades').addEventListener('click', function () {
+  mostrar(`<h3>Média das idades</h3><p>${media(alunos.map(a => a.idade)).toFixed(2)}</p>`);
+});
+
+$('r-nomes').addEventListener('click', function () {
+  mostrar('<h3>Nomes em ordem alfabética</h3>' + lista(alunos.map(a => a.nome).sort((a, b) => a.localeCompare(b))));
+});
+
+$('r-cursos').addEventListener('click', function () {
+  const contagem = alunos.reduce((acc, a) => ({ ...acc, [a.curso]: (acc[a.curso] || 0) + 1 }), {});
+  mostrar('<h3>Alunos por curso</h3>' + lista(Object.entries(contagem).map(([curso, qtd]) => `${curso}: ${qtd}`)));
+});
+
+renderizar();
+</script>
+</body>
+</html>
